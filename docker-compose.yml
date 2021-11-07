@@ -1,0 +1,66 @@
+version: '3.5'
+services:
+  nest-app:
+    build:
+      context: .
+      target: deps
+    image: nest_app
+    container_name: nest_app_container
+    command: npm run start:dev
+    environment:
+      - MONGODB_URI=mongodb://root:example@mongo:27017/nest_app
+      - REDIS_HOST=redis
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mongo
+    volumes:
+      - .:/app
+    networks:
+      - node-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    privileged: true
+    ports:
+      - 6379:6379
+    networks:
+      - node-network
+
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: nest_app
+    volumes:
+      - mongodb:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - 27017:27017
+    networks:
+      - node-network
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+    networks:
+      - node-network
+
+volumes:
+  mongodb:
+  node_modules:
+
+networks:
+  node-network:
+    driver: bridge
